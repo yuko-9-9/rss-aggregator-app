@@ -1,64 +1,56 @@
-"use client";
+"use client"; // このファイルがクライアントコンポーネントであることを宣言（Next.jsのルール）
 
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
-import { formatDistanceToNow } from "date-fns";
-import { ja } from "date-fns/locale";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-
-type FeedItem = {
-  title: string;
-  link?: string;
-  pubDate?: string;
-  isoDate?: string;
-};
-
-type Feed = {
-  title: string;
-  items: FeedItem[];
-  error?: boolean;
-};
+import Link from "next/link"; // ページ遷移リンク
+import { useEffect, useState } from "react"; // Reactの状態・副作用フック
+import type { Feed } from "../../../shared/types"; // Feed型を共通typesからimport
+import FeedSection from "./components/FeedSection"; // 共通化したフィード表示UIコンポーネント
 
 export default function HomePage() {
+  // 各カテゴリごとのフィード状態管理
   const [matomeFeeds, setMatomeFeeds] = useState<Feed[]>([]);
   const [techFeeds, setTechFeeds] = useState<Feed[]>([]);
+
+  // ローディング状態
   const [loadingMatome, setLoadingMatome] = useState(true);
   const [loadingTech, setLoadingTech] = useState(true);
+
+  // 特定インデックスの更新中かを記録する（スピナー用）
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
 
-  // まとめ系フィード読み込み
-  const loadMatomeFeeds = () => {
-    setLoadingMatome(true);
-    fetch("http://localhost:34567/feeds/matome")
-      .then((res) => res.json())
-      .then((data) => {
-        setMatomeFeeds(data);
-        setLoadingMatome(false);
-      })
-      .catch(() => {
-        setMatomeFeeds([]);
-        setLoadingMatome(false);
-      });
+  // カテゴリ文字列の型を明示
+  type FeedCategory = "matome" | "tech";
+
+  /**
+   * フィード取得共通関数（matome/tech兼用）
+   * @param category 取得対象カテゴリ
+   * @param setFeeds 状態更新関数
+   * @param setLoading ローディング更新関数
+   */
+  const loadFeeds = async (
+    category: FeedCategory,
+    setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>,
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    setLoading(true); // ローディングON
+    try {
+      const res = await fetch(`http://localhost:34567/feeds/${category}`);
+      const data = await res.json();
+      setFeeds(data); // 成功したらデータセット
+    } catch {
+      setFeeds([]); // 失敗時は空配列
+    } finally {
+      setLoading(false); // ローディングOFF
+    }
   };
 
-  // tech系フィード読み込み
-  const loadTechFeeds = () => {
-    setLoadingTech(true);
-    fetch("http://localhost:34567/feeds/tech")
-      .then((res) => res.json())
-      .then((data) => {
-        setTechFeeds(data);
-        setLoadingTech(false);
-      })
-      .catch(() => {
-        setTechFeeds([]);
-        setLoadingTech(false);
-      });
-  };
+  /**
+   * 単一フィード更新処理（特定インデックスのみ）
+   * @param category まとめ or tech
+   * @param index 対象のフィード位置
+   */
+  const updateFeed = async (category: FeedCategory, index: number) => {
+    setLoadingIds((prev) => [...prev, index]); // 該当インデックスを「更新中」に追加
 
-  // 個別更新（まとめ優先で実装例）
-  const updateFeed = async (category: "matome" | "tech", index: number) => {
-    setLoadingIds((prev) => [...prev, index]);
     try {
       const res = await fetch(
         `http://localhost:34567/feeds/${category}/${index}`
@@ -66,42 +58,49 @@ export default function HomePage() {
       if (!res.ok) throw new Error("Failed to fetch feed");
       const updatedFeed = await res.json();
 
+      // 配列の中身をindex指定で差し替える共通関数
+      const replaceFeedAtIndex = (
+        feeds: Feed[],
+        index: number,
+        newFeed: Feed
+      ): Feed[] => {
+        const updated = [...feeds]; // 新しい配列を作る（破壊的でない）
+        updated[index] = newFeed;
+        return updated;
+      };
+
+      // カテゴリに応じて該当フィード状態を更新
       if (category === "matome") {
-        setMatomeFeeds((prev) => {
-          const newFeeds = [...prev];
-          newFeeds[index] = updatedFeed;
-          return newFeeds;
-        });
+        setMatomeFeeds((prev) => replaceFeedAtIndex(prev, index, updatedFeed));
       } else {
-        setTechFeeds((prev) => {
-          const newFeeds = [...prev];
-          newFeeds[index] = updatedFeed;
-          return newFeeds;
-        });
+        setTechFeeds((prev) => replaceFeedAtIndex(prev, index, updatedFeed));
       }
     } catch {
-      // エラーは何もしないでOK
+      // エラー処理はとりあえずスルーでOK
     }
-    setLoadingIds((prev) => prev.filter((id) => id !== index));
+
+    setLoadingIds((prev) => prev.filter((id) => id !== index)); // 更新完了としてIDを除去
   };
 
+  // 初回マウント時に両方のカテゴリを読み込む
   useEffect(() => {
-    loadMatomeFeeds();
-    loadTechFeeds();
+    loadFeeds("matome", setMatomeFeeds, setLoadingMatome);
+    loadFeeds("tech", setTechFeeds, setLoadingTech);
   }, []);
 
+  // どっちかローディング中なら「読み込み中」を表示
   if (loadingMatome || loadingTech)
     return <div className="p-6">読み込み中...</div>;
 
-  // まとめ系 or tech系で表示分ける小コンポーネント作ってもいいけど
-  // とりあえずひとつのページに両方表示するならこうやで
-
+  // ここからUI描画部
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
+      {/* タイトル */}
       <h1 className="text-4xl font-bold mb-6 text-center text-cyan-900">
         📰 情報まとめRSS
       </h1>
 
+      {/* ページリンクボタン */}
       <div className="flex justify-center gap-4 mb-10">
         <Link
           href="/matome"
@@ -117,117 +116,21 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* まとめ系タイトル */}
-      <div className="mb-6 border-b-2 border-cyan-600">
-        <h2 className="text-2xl font-semibold text-cyan-700">
-          まとめ系フィード一覧
-        </h2>
-      </div>
+      {/* フィード一覧（まとめ） */}
+      <FeedSection
+        title="まとめ系フィード一覧"
+        feeds={matomeFeeds}
+        loadingIds={loadingIds}
+        onUpdate={(index) => updateFeed("matome", index)}
+      />
 
-      <div className="flex flex-wrap justify-center gap-6 mb-12">
-        {matomeFeeds.map((feed, i) => (
-          <FeedCard
-            key={`matome-${i}`}
-            feed={feed}
-            index={i}
-            loadingIds={loadingIds}
-            onUpdate={() => updateFeed("matome", i)}
-          />
-        ))}
-      </div>
-
-      {/* tech系タイトル */}
-      <div className="mb-6 border-b-2 border-cyan-600">
-        <h2 className="text-2xl font-semibold text-cyan-700">
-          プログラミング系フィード一覧
-        </h2>
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-6">
-        {techFeeds.map((feed, i) => (
-          <FeedCard
-            key={`tech-${i}`}
-            feed={feed}
-            index={i}
-            loadingIds={loadingIds}
-            onUpdate={() => updateFeed("tech", i)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Feedカードはコンポーネントに分けてスッキリさせる
-function FeedCard({
-  feed,
-  index,
-  loadingIds,
-  onUpdate,
-}: {
-  feed: Feed;
-  index: number;
-  loadingIds: number[];
-  onUpdate: () => void;
-}) {
-  return (
-    <div className="w-[300px] bg-white rounded-xl border shadow p-4 flex flex-col">
-      <div className="flex justify-between items-center mb-3 border-b pb-2">
-        <h3 className="text-lg font-semibold text-gray-800">{feed.title}</h3>
-        <button
-          onClick={onUpdate}
-          disabled={loadingIds.includes(index)}
-          className="ml-2 p-1 rounded hover:bg-cyan-100 disabled:opacity-50"
-          title="更新"
-        >
-          <ArrowPathIcon
-            className={`w-5 h-5 text-cyan-700 ${
-              loadingIds.includes(index) ? "animate-spin" : ""
-            }`}
-          />
-        </button>
-      </div>
-
-      {feed.error ? (
-        <p className="text-red-600">⚠️ 取得に失敗しました</p>
-      ) : (
-        <ul className="space-y-2 text-sm">
-          {feed.items.map((item, idx) => {
-            const dateStr = item.pubDate || (item as any).isoDate;
-            const date = dateStr ? new Date(dateStr) : null;
-
-            return (
-              <li key={idx}>
-                <span className="flex justify-between text-xs text-gray-500 w-full">
-                  <span>{date ? date.toLocaleDateString() : "日付不明"}</span>
-                  <span>
-                    {date
-                      ? formatDistanceToNow(date, {
-                          locale: ja,
-                          addSuffix: true,
-                        })
-                      : ""}
-                  </span>
-                </span>
-
-                <div className="relative group">
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-700 hover:underline block truncate max-w-[260px]"
-                  >
-                    {item.title}
-                  </a>
-                  <div className="absolute z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 left-0 top-full mt-1 w-max max-w-xs whitespace-normal break-words shadow-lg">
-                    {item.title}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {/* フィード一覧（Tech） */}
+      <FeedSection
+        title="Tech系フィード一覧"
+        feeds={techFeeds}
+        loadingIds={loadingIds}
+        onUpdate={(index) => updateFeed("tech", index)}
+      />
     </div>
   );
 }
