@@ -3,6 +3,7 @@
 import Link from "next/link"; // ページ遷移リンク
 import { useEffect, useState } from "react"; // Reactの状態・副作用フック
 import type { Feed } from "../../../shared/types"; // Feed型を共通typesからimport
+import { updateFeed as apiUpdateFeed, getFeeds } from "../lib/api"; // API関数をimport
 import FeedSection from "./components/FeedSection"; // 共通化したフィード表示UIコンポーネント
 
 export default function HomePage() {
@@ -10,7 +11,7 @@ export default function HomePage() {
   const [matomeFeeds, setMatomeFeeds] = useState<Feed[]>([]);
   const [techFeeds, setTechFeeds] = useState<Feed[]>([]);
 
-  // ローディング状態
+  // ローディング状態管理
   const [loadingMatome, setLoadingMatome] = useState(true);
   const [loadingTech, setLoadingTech] = useState(true);
 
@@ -31,15 +32,14 @@ export default function HomePage() {
     setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
   ) => {
-    setLoading(true); // ローディングON
+    setLoading(true);
     try {
-      const res = await fetch(`http://localhost:34567/feeds/${category}`);
-      const data = await res.json();
-      setFeeds(data); // 成功したらデータセット
+      const data = await getFeeds(category);
+      setFeeds(data);
     } catch {
-      setFeeds([]); // 失敗時は空配列
+      setFeeds([]);
     } finally {
-      setLoading(false); // ローディングOFF
+      setLoading(false);
     }
   };
 
@@ -49,14 +49,10 @@ export default function HomePage() {
    * @param index 対象のフィード位置
    */
   const updateFeed = async (category: FeedCategory, index: number) => {
-    setLoadingIds((prev) => [...prev, index]); // 該当インデックスを「更新中」に追加
+    setLoadingIds((prev) => [...prev, index]);
 
     try {
-      const res = await fetch(
-        `http://localhost:34567/feeds/${category}/${index}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch feed");
-      const updatedFeed = await res.json();
+      const updatedFeed = await apiUpdateFeed(category, index);
 
       // 配列の中身をindex指定で差し替える共通関数
       const replaceFeedAtIndex = (
@@ -64,35 +60,33 @@ export default function HomePage() {
         index: number,
         newFeed: Feed
       ): Feed[] => {
-        const updated = [...feeds]; // 新しい配列を作る（破壊的でない）
+        const updated = [...feeds];
         updated[index] = newFeed;
         return updated;
       };
 
-      // カテゴリに応じて該当フィード状態を更新
       if (category === "matome") {
         setMatomeFeeds((prev) => replaceFeedAtIndex(prev, index, updatedFeed));
       } else {
         setTechFeeds((prev) => replaceFeedAtIndex(prev, index, updatedFeed));
       }
     } catch {
-      // エラー処理はとりあえずスルーでOK
+      // エラーは無視でOK
     }
 
-    setLoadingIds((prev) => prev.filter((id) => id !== index)); // 更新完了としてIDを除去
+    setLoadingIds((prev) => prev.filter((id) => id !== index));
   };
 
-  // 初回マウント時に両方のカテゴリを読み込む
+  // 初回マウント時に両カテゴリのフィードを読み込み
   useEffect(() => {
     loadFeeds("matome", setMatomeFeeds, setLoadingMatome);
     loadFeeds("tech", setTechFeeds, setLoadingTech);
   }, []);
 
-  // どっちかローディング中なら「読み込み中」を表示
+  // ローディング中は表示
   if (loadingMatome || loadingTech)
     return <div className="p-6">読み込み中...</div>;
 
-  // ここからUI描画部
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
       {/* タイトル */}
@@ -100,7 +94,7 @@ export default function HomePage() {
         📰 情報まとめRSS
       </h1>
 
-      {/* ページリンクボタン */}
+      {/* ページ遷移リンク */}
       <div className="flex justify-center gap-4 mb-10">
         <Link
           href="/matome"
@@ -116,7 +110,7 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* フィード一覧（まとめ） */}
+      {/* まとめ系フィード一覧 */}
       <FeedSection
         title="まとめ系フィード一覧"
         feeds={matomeFeeds}
@@ -124,7 +118,7 @@ export default function HomePage() {
         onUpdate={(index) => updateFeed("matome", index)}
       />
 
-      {/* フィード一覧（Tech） */}
+      {/* Tech系フィード一覧 */}
       <FeedSection
         title="Tech系フィード一覧"
         feeds={techFeeds}

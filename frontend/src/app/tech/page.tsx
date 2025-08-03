@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Feed } from "../../../../shared/types";
+import { updateFeed as apiUpdateFeed, getFeeds } from "../../lib/api";
 import FeedSection from "../components/FeedSection";
 
 export default function TechPage() {
@@ -12,8 +13,7 @@ export default function TechPage() {
 
   const loadFeeds = () => {
     setLoading(true);
-    fetch("http://localhost:34567/feeds/tech") // APIでtech用を用意する想定
-      .then((res) => res.json())
+    getFeeds("tech")
       .then((data) => {
         setFeeds(data);
         setLoading(false);
@@ -27,8 +27,7 @@ export default function TechPage() {
   const updateFeed = async (index: number) => {
     setLoadingIds((prev) => [...prev, index]);
     try {
-      const res = await fetch(`http://localhost:34567/feeds/tech/${index}`);
-      if (!res.ok) throw new Error("Failed to fetch feed");
+      const res = await apiUpdateFeed("tech", index);
       const updatedFeed = await res.json();
       setFeeds((prevFeeds) => {
         const newFeeds = [...prevFeeds];
