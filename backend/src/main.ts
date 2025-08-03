@@ -1,16 +1,19 @@
 import { NestFactory } from '@nestjs/core';
-import * as dotenv from 'dotenv'; // ← 追加
+import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  dotenv.config(); // ← これを追加
+  // ローカルだけ .env 読む
+  if (process.env.NODE_ENV !== 'production') {
+    dotenv.config();
+  }
 
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  const port = process.env.PORT || 34567;
-  // await app.listen(port);
-  // zこの書き方やと NestJS はデフォで localhost（＝ 127.0.0.1）に bind する。
-  // Railway は外部から叩くので、0.0.0.0 に bind しないと外部からアクセスできん → 502 になる。
+
+  // ローカルでは .env の PORT（例：34567）を使う。Railway では process.env.PORT が自動で入る
+  const port = Number(process.env.PORT) || 3000;
+
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Server running on http://localhost:${port}`);
 }
