@@ -16,5 +16,6 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Server running on http://localhost:${port}`);
+  console.log('Starting app with PORT:', process.env.PORT);
 }
 bootstrap();
