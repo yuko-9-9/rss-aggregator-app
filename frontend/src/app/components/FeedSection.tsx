@@ -18,7 +18,7 @@ export default function FeedSection({
 }: FeedSectionProps) {
   return (
     <>
-      <div className="mb-6 border-b-2 border-cyan-600">
+      <div className="mt-10 mb-6 border-b-2 border-cyan-600">
         <h2 className="text-2xl font-semibold text-cyan-700">{title}</h2>
       </div>
       <div className={`flex flex-wrap justify-center gap-6 ${className ?? ""}`}>

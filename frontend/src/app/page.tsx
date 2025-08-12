@@ -138,7 +138,7 @@ export default function HomePage() {
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed("matome", index)}
       />
-
+      <div className="h-20" />
       {/* Tech系フィード一覧 */}
       <FeedSection
         title="Tech系フィード一覧"

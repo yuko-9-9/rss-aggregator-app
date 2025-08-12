@@ -35,7 +35,7 @@ export default function FeedCard({
   onUpdate: () => void;
 }) {
   return (
-    <div className="w-[300px] bg-white rounded-xl border shadow p-4 flex flex-col">
+    <div className="w-[300px] bg-gray-200 rounded-xl border shadow p-4 flex flex-col">
       {/* ヘッダー部分：サイト名と更新ボタン */}
       <div className="flex justify-between items-center mb-3 border-b pb-2">
         <h3 className="text-lg font-semibold text-gray-800">{feed.title}</h3>
@@ -94,7 +94,7 @@ export default function FeedCard({
                     href={item.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-700 hover:underline block truncate max-w-[260px]"
+                    className="text-cyan-700 hover:underline visited:text-purple-500 block truncate max-w-[260px]"
                   >
                     {item.title}
                   </a>
