@@ -11,40 +11,63 @@ export default function TechPage() {
   const [loading, setLoading] = useState(true);
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
 
-  const loadFeeds = () => {
+  /**
+   * フィード取得（キャッシュ保存付き）
+   */
+  const loadFeeds = async () => {
     setLoading(true);
-    getFeeds("tech")
-      .then((data) => {
-        setFeeds(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setFeeds([]);
-        setLoading(false);
-      });
+    try {
+      const data = await getFeeds("tech");
+      setFeeds(data);
+      sessionStorage.setItem("techFeeds", JSON.stringify(data)); // キャッシュ保存
+    } catch {
+      setFeeds([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /**
+   * 単一フィード更新
+   */
   const updateFeed = async (index: number) => {
     setLoadingIds((prev) => [...prev, index]);
     try {
-      const res = await apiUpdateFeed("tech", index);
-      const updatedFeed = await res.json();
-      setFeeds((prevFeeds) => {
-        const newFeeds = [...prevFeeds];
+      const updatedFeed = await apiUpdateFeed("tech", index);
+
+      setFeeds((prev) => {
+        const newFeeds = [...prev];
         newFeeds[index] = updatedFeed;
+        sessionStorage.setItem("techFeeds", JSON.stringify(newFeeds)); // キャッシュ更新
         return newFeeds;
       });
     } catch {
-      // エラー処理
+      // エラー時は何もしない
+    } finally {
+      setLoadingIds((prev) => prev.filter((id) => id !== index));
     }
-    setLoadingIds((prev) => prev.filter((id) => id !== index));
   };
 
+  /**
+   * 初回マウント時
+   */
   useEffect(() => {
-    loadFeeds();
+    const cache = sessionStorage.getItem("techFeeds");
+    if (cache) {
+      // キャッシュあれば即表示
+      setFeeds(JSON.parse(cache));
+      setLoading(false);
+      // 裏で更新
+      loadFeeds();
+    } else {
+      // キャッシュなければ初回読み込み
+      loadFeeds();
+    }
   }, []);
 
-  if (loading) return <div className="p-6">読み込み中...</div>;
+  if (loading) {
+    return <div className="p-6">読み込み中...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
@@ -60,7 +83,7 @@ export default function TechPage() {
         </Link>
       </div>
       <FeedSection
-        title="tech系フィード一覧"
+        title="まとめ系フィード一覧"
         feeds={feeds}
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed(index)}

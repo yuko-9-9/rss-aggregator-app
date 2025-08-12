@@ -1,31 +1,28 @@
-"use client"; // このファイルがクライアントコンポーネントであることを宣言（Next.jsのルール）
+"use client"; // クライアントコンポーネント宣言
 
-import Link from "next/link"; // ページ遷移リンク
-import { useEffect, useState } from "react"; // Reactの状態・副作用フック
-import type { Feed } from "../../../shared/types"; // Feed型を共通typesからimport
-import { updateFeed as apiUpdateFeed, getFeeds } from "../lib/api"; // API関数をimport
-import FeedSection from "./components/FeedSection"; // 共通化したフィード表示UIコンポーネント
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import type { Feed } from "../../../shared/types";
+import { updateFeed as apiUpdateFeed, getFeeds } from "../lib/api";
+import FeedSection from "./components/FeedSection";
+
+// カテゴリ型
+type FeedCategory = "matome" | "tech";
 
 export default function HomePage() {
-  // 各カテゴリごとのフィード状態管理
+  // 各カテゴリのフィード
   const [matomeFeeds, setMatomeFeeds] = useState<Feed[]>([]);
   const [techFeeds, setTechFeeds] = useState<Feed[]>([]);
 
-  // ローディング状態管理
+  // ローディング状態
   const [loadingMatome, setLoadingMatome] = useState(true);
   const [loadingTech, setLoadingTech] = useState(true);
 
-  // 特定インデックスの更新中かを記録する（スピナー用）
+  // 更新中のインデックス
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
 
-  // カテゴリ文字列の型を明示
-  type FeedCategory = "matome" | "tech";
-
   /**
-   * フィード取得共通関数（matome/tech兼用）
-   * @param category 取得対象カテゴリ
-   * @param setFeeds 状態更新関数
-   * @param setLoading ローディング更新関数
+   * 共通フィード取得
    */
   const loadFeeds = async (
     category: FeedCategory,
@@ -36,25 +33,25 @@ export default function HomePage() {
     try {
       const data = await getFeeds(category);
       setFeeds(data);
+      // キャッシュ保存
+      sessionStorage.setItem(`${category}Feeds`, JSON.stringify(data));
+      return data;
     } catch {
       setFeeds([]);
+      return [];
     } finally {
-      setLoading(false);
+      setLoading(false); // 必ず解除
     }
   };
 
   /**
-   * 単一フィード更新処理（特定インデックスのみ）
-   * @param category まとめ or tech
-   * @param index 対象のフィード位置
+   * 単一フィード更新
    */
   const updateFeed = async (category: FeedCategory, index: number) => {
     setLoadingIds((prev) => [...prev, index]);
-
     try {
       const updatedFeed = await apiUpdateFeed(category, index);
 
-      // 配列の中身をindex指定で差し替える共通関数
       const replaceFeedAtIndex = (
         feeds: Feed[],
         index: number,
@@ -66,45 +63,69 @@ export default function HomePage() {
       };
 
       if (category === "matome") {
-        setMatomeFeeds((prev) => replaceFeedAtIndex(prev, index, updatedFeed));
+        setMatomeFeeds((prev) => {
+          const newFeeds = replaceFeedAtIndex(prev, index, updatedFeed);
+          sessionStorage.setItem("matomeFeeds", JSON.stringify(newFeeds));
+          return newFeeds;
+        });
       } else {
-        setTechFeeds((prev) => replaceFeedAtIndex(prev, index, updatedFeed));
+        setTechFeeds((prev) => {
+          const newFeeds = replaceFeedAtIndex(prev, index, updatedFeed);
+          sessionStorage.setItem("techFeeds", JSON.stringify(newFeeds));
+          return newFeeds;
+        });
       }
     } catch {
-      // エラーは無視でOK
+      // エラーは無視
     }
-
     setLoadingIds((prev) => prev.filter((id) => id !== index));
   };
 
-  // 初回マウント時に両カテゴリのフィードを読み込み
+  /**
+   * 初回マウント時処理
+   */
   useEffect(() => {
-    loadFeeds("matome", setMatomeFeeds, setLoadingMatome);
-    loadFeeds("tech", setTechFeeds, setLoadingTech);
+    // キャッシュ読み込み
+    const matomeCache = sessionStorage.getItem("matomeFeeds");
+    const techCache = sessionStorage.getItem("techFeeds");
+
+    if (matomeCache) {
+      setMatomeFeeds(JSON.parse(matomeCache));
+      setLoadingMatome(false);
+    } else {
+      loadFeeds("matome", setMatomeFeeds, setLoadingMatome);
+    }
+
+    if (techCache) {
+      setTechFeeds(JSON.parse(techCache));
+      setLoadingTech(false);
+    } else {
+      loadFeeds("tech", setTechFeeds, setLoadingTech);
+    }
   }, []);
 
-  // ローディング中は表示
-  if (loadingMatome || loadingTech)
+  // ローディング中（両方とも）なら表示
+  if (loadingMatome && loadingTech) {
     return <div className="p-6">読み込み中...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
       {/* タイトル */}
-      <h1 className="text-4xl font-bold mb-6 text-center text-cyan-900">
+      <h1 className="text-4xl font-bold mb-10 text-center text-cyan-900">
         📰 情報まとめRSS
       </h1>
-
-      {/* ページ遷移リンク */}
+      {/* ページ遷移リンク（共通スタイルにする） */}
       <div className="flex justify-center gap-4 mb-10">
         <Link
           href="/matome"
-          className="px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
+          className="inline-block w-60 text-center px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
         >
           まとめ系フィードへ
         </Link>
         <Link
           href="/tech"
-          className="px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
+          className="inline-block w-60 text-center px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
         >
           Tech系フィードへ
         </Link>
