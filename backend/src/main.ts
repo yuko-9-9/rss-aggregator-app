@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  // ローカルだけ .env 読む
+  // 開発環境（production 以外）のときだけ .env を読み込む
   if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
   }
@@ -11,8 +11,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
 
-  // ローカルでは .env の PORT（例：34567）を使う。Railway では process.env.PORT が自動で入る
-  const port = Number(process.env.PORT) || 3000;
+  /**
+   * ポート設定
+   * - Render などの本番環境 → process.env.PORT が自動で注入されるのでそれを利用
+   * - ローカル → .env に PORT があれば使う。なければデフォルト 34567
+   */
+  const port = Number(process.env.PORT) || 34567;
 
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Server running on http://localhost:${port}`);
