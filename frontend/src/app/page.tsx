@@ -45,40 +45,71 @@ export default function HomePage() {
   };
 
   /**
-   * 単一フィード更新
+   * 単一フィード更新（index 番目だけ再取得して差し替え）
+   * - category: "matome" | "tech"
+   * - index: フィード配列の何番目を更新するか
    */
   const updateFeed = async (category: FeedCategory, index: number) => {
+    // 1) 更新中フラグを追加（UIでボタンを無効にしたりアイコン回転させる）
     setLoadingIds((prev) => [...prev, index]);
+
     try {
+      // 2) APIを叩いて最新のフィードデータを取ってくる
+      //    ここで apiUpdateFeed は実際に fetch -> res.json() を返す実装であることが前提
       const updatedFeed = await apiUpdateFeed(category, index);
 
+      // 3) 置換用ヘルパー：不変性を保ちながら配列の index を差し替える
       const replaceFeedAtIndex = (
         feeds: Feed[],
         index: number,
         newFeed: Feed
       ): Feed[] => {
-        const updated = [...feeds];
-        updated[index] = newFeed;
+        const updated = [...feeds]; // 元配列をコピー
+        updated[index] = newFeed; // 指定indexだけ差し替え
         return updated;
       };
 
+      // 4) カテゴリごとに state を更新（setState の functional update を使って安全に）
       if (category === "matome") {
         setMatomeFeeds((prev) => {
+          // 安全策：prev が配列じゃない、または index 範囲外なら何もしない
+          if (!Array.isArray(prev) || index < 0 || index >= prev.length) {
+            console.warn(
+              "updateFeed: invalid index or prev not array",
+              index,
+              prev
+            );
+            return prev;
+          }
           const newFeeds = replaceFeedAtIndex(prev, index, updatedFeed);
+          // 5) キャッシュに保存（ページ遷移や再表示時の高速化のため）
           sessionStorage.setItem("matomeFeeds", JSON.stringify(newFeeds));
           return newFeeds;
         });
       } else {
         setTechFeeds((prev) => {
+          if (!Array.isArray(prev) || index < 0 || index >= prev.length) {
+            console.warn(
+              "updateFeed: invalid index or prev not array",
+              index,
+              prev
+            );
+            return prev;
+          }
           const newFeeds = replaceFeedAtIndex(prev, index, updatedFeed);
           sessionStorage.setItem("techFeeds", JSON.stringify(newFeeds));
           return newFeeds;
         });
       }
-    } catch {
-      // エラーは無視
+    } catch (err) {
+      // 6) エラー時（APIが落ちた・ネットワークなど）はここに来る
+      //    ちゃんとログ出しておくとデバッグが楽になる
+      console.error("updateFeed failed:", err);
+      // （任意）UIでエラーメッセージ出したいならここで state を追加して通知する
+    } finally {
+      // 7) 必ず更新中フラグを外す（finally でやるのが安全）
+      setLoadingIds((prev) => prev.filter((id) => id !== index));
     }
-    setLoadingIds((prev) => prev.filter((id) => id !== index));
   };
 
   /**
