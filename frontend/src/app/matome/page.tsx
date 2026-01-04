@@ -84,6 +84,7 @@ export default function MatomePage() {
       </div>
       <FeedSection
         title="まとめ系フィード一覧"
+        category="matome"
         feeds={feeds}
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed(index)}

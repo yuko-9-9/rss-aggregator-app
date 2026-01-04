@@ -165,6 +165,7 @@ export default function HomePage() {
       {/* まとめ系フィード一覧 */}
       <FeedSection
         title="まとめ系フィード一覧"
+        category="matome"
         feeds={matomeFeeds}
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed("matome", index)}
@@ -173,6 +174,7 @@ export default function HomePage() {
       {/* Tech系フィード一覧 */}
       <FeedSection
         title="Tech系フィード一覧"
+        category="tech"
         feeds={techFeeds}
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed("tech", index)}

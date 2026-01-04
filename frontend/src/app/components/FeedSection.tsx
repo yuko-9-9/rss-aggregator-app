@@ -3,6 +3,7 @@ import FeedCard from "./FeedCard";
 
 type FeedSectionProps = {
   title: string;
+  category: "matome" | "tech";
   feeds: Feed[];
   loadingIds: number[];
   onUpdate: (index: number) => void;
@@ -11,6 +12,7 @@ type FeedSectionProps = {
 
 export default function FeedSection({
   title,
+  category,
   feeds,
   loadingIds,
   onUpdate,
@@ -27,6 +29,7 @@ export default function FeedSection({
             key={`${title}-${i}`} // React用の一意キー
             feed={feed} // 1件分のフィードデータ
             index={i} // 何番目か
+            category={category}
             loadingIds={loadingIds} // 更新中かどうか判定するための配列
             onUpdate={() => onUpdate(i)} // ← 呼ばれたら親に「このi番目更新して！」って伝える
           />

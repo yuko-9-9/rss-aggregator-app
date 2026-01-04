@@ -5,19 +5,24 @@ import { FeedService } from './feed.service';
 export class FeedController {
   constructor(private readonly feedService: FeedService) {}
 
-  // tech系のフィード全件取得
+  // =========================
+  // 一覧取得（トップ用）
+  // =========================
+
   @Get('tech')
   async getTechFeeds() {
     return this.feedService.fetchAllFeeds('tech');
   }
 
-  // まとめ系のフィード全件取得
   @Get('matome')
   async getMatomeFeeds() {
     return this.feedService.fetchAllFeeds('matome');
   }
 
-  // tech系の個別取得
+  // =========================
+  // 個別取得（5件・更新ボタン用）
+  // =========================
+
   @Get('tech/:id')
   async getTechFeed(@Param('id') id: string) {
     const feed = await this.feedService.findOne('tech', id);
@@ -27,12 +32,26 @@ export class FeedController {
     return feed;
   }
 
-  // まとめ系の個別取得
   @Get('matome/:id')
   async getMatomeFeed(@Param('id') id: string) {
     const feed = await this.feedService.findOne('matome', id);
     if (!feed) {
       throw new NotFoundException('Matome feed not found');
+    }
+    return feed;
+  }
+
+  // =========================
+  // 個別取得（100件・詳細ページ用）
+  // =========================
+  @Get(':category/:id/detail')
+  async getFeedDetail(
+    @Param('category') category: 'tech' | 'matome',
+    @Param('id') id: string,
+  ) {
+    const feed = await this.feedService.findOne(category, id, 100);
+    if (!feed) {
+      throw new NotFoundException('Feed not found');
     }
     return feed;
   }

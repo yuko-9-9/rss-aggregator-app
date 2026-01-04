@@ -42,7 +42,7 @@ export class FeedService {
           const feed = await parser.parseURL(url);
           return {
             title: feed.title,
-            items: feed.items.slice(0, 5),
+            items: feed.items.slice(0, 10),
           };
         } catch (err) {
           return { title: url, items: [], error: true };
@@ -53,7 +53,7 @@ export class FeedService {
     return allFeeds;
   }
 
-  async findOne(category: FeedCategory, id: string) {
+  async findOne(category: FeedCategory, id: string, limit = 5) {
     const urls = this.feedUrlMap[category];
     const index = Number(id);
     if (isNaN(index)) return null;
@@ -65,7 +65,7 @@ export class FeedService {
       const feed = await parser.parseURL(url);
       return {
         title: feed.title,
-        items: feed.items.slice(0, 5),
+        items: feed.items.slice(0, limit),
       };
     } catch (err) {
       return { title: url, items: [], error: true };

@@ -84,6 +84,7 @@ export default function TechPage() {
       </div>
       <FeedSection
         title="まとめ系フィード一覧"
+        category="tech"
         feeds={feeds}
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed(index)}

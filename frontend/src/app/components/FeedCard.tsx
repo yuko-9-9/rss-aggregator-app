@@ -6,6 +6,7 @@ import { ArrowPathIcon } from "@heroicons/react/24/solid";
 // 日付表示用
 import { format, formatDistanceToNow } from "date-fns"; // ← format 追加
 import { ja } from "date-fns/locale"; // 日本語ロケール（〜前を日本語で出す）
+import Link from "next/link";
 
 // RSSアイテム1件分の型定義
 type FeedItem = {
@@ -26,11 +27,13 @@ type Feed = {
 export default function FeedCard({
   feed, // サイトのデータ（タイトル＋記事一覧など）
   index, // 親コンポーネント側での順番
+  category, // カテゴリー
   loadingIds, // 現在更新中のindex配列
   onUpdate, // 更新ボタン押したときの処理
 }: {
   feed: Feed;
   index: number;
+  category: "matome" | "tech";
   loadingIds: number[];
   onUpdate: () => void;
 }) {
@@ -38,7 +41,16 @@ export default function FeedCard({
     <div className="w-[300px] bg-gray-200 rounded-xl border shadow p-4 flex flex-col">
       {/* ヘッダー部分：サイト名と更新ボタン */}
       <div className="flex justify-between items-center mb-3 border-b pb-2">
-        <h3 className="text-lg font-semibold text-gray-800">{feed.title}</h3>
+        <h3
+          className="
+            text-base
+            font-semibold
+            text-gray-800
+            min-h-[2.8em]    // ← 最初から2行分の高さ確保
+          "
+        >
+          {feed.title}
+        </h3>
         <button
           onClick={onUpdate}
           disabled={loadingIds.includes(index)} // 更新中ならボタン無効化
@@ -47,8 +59,10 @@ export default function FeedCard({
         >
           {/* アイコン（回転アニメーションは更新中のみ） */}
           <ArrowPathIcon
-            className={`w-5 h-5 text-cyan-700 ${
-              loadingIds.includes(index) ? "animate-spin" : ""
+            className={`w-5 h-5 ${
+              loadingIds.includes(index)
+                ? "animate-spin text-orange-500"
+                : "text-gray-600 hover:text-cyan-700"
             }`}
           />
         </button>
@@ -59,7 +73,14 @@ export default function FeedCard({
         <p className="text-red-600">⚠️ 取得に失敗しました</p>
       ) : (
         // 記事リスト
-        <ul className="space-y-2 text-sm">
+        <ul
+          className="
+            space-y-2 text-sm
+            max-h-[240px]     /* 高さ固定（調整可） */
+            overflow-y-auto   /* 縦スクロール */
+            pr-1              /* スクロールバーで文字隠れないように */
+          "
+        >
           {feed.items.map((item, idx) => {
             // 日付文字列を取得（pubDate優先、なければisoDate）
             const dateStr = item.pubDate || item.isoDate;
@@ -108,6 +129,25 @@ export default function FeedCard({
           })}
         </ul>
       )}
+      {/* もっと見る（このサイトの詳細ページへ） */}
+      <div className="mt-3 pt-2 border-t text-right">
+        <Link href={`/feeds/${category}/${index}`}>
+          <button
+            className="
+              px-3 py-1
+              text-sm
+              font-medium
+              text-white
+              bg-cyan-600
+              rounded-md
+              hover:bg-cyan-700
+              transition
+            "
+          >
+            もっと見る 👀
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }
