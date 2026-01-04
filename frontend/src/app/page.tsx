@@ -152,28 +152,28 @@ export default function HomePage() {
           href="/matome"
           className="inline-block w-60 text-center px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
         >
-          まとめ系フィードへ
+          まとめ系
         </Link>
         <Link
           href="/tech"
           className="inline-block w-60 text-center px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
         >
-          Tech系フィードへ
+          Tech系
         </Link>
       </div>
 
-      {/* まとめ系フィード一覧 */}
+      {/* まとめ系サイト一覧 */}
       <FeedSection
-        title="まとめ系フィード一覧"
+        title="まとめ系サイト一覧"
         category="matome"
         feeds={matomeFeeds}
         loadingIds={loadingIds}
         onUpdate={(index) => updateFeed("matome", index)}
       />
       <div className="h-20" />
-      {/* Tech系フィード一覧 */}
+      {/* tech系サイト一覧 */}
       <FeedSection
-        title="Tech系フィード一覧"
+        title="tech系サイト一覧"
         category="tech"
         feeds={techFeeds}
         loadingIds={loadingIds}

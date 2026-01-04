@@ -83,7 +83,7 @@ export default function TechPage() {
         </Link>
       </div>
       <FeedSection
-        title="まとめ系フィード一覧"
+        title="まとめ系サイト一覧"
         category="tech"
         feeds={feeds}
         loadingIds={loadingIds}

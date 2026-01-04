@@ -1,7 +1,7 @@
 // 環境変数から API のベースURLを取得
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// フィード一覧を取得する関数
+// 一覧を取得する関数
 // category は "matome" か "tech" だけを許可
 export const getFeeds = async (category: "matome" | "tech") => {
   const res = await fetch(`${API_BASE}/feeds/${category}`);

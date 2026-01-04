@@ -83,7 +83,7 @@ export default function MatomePage() {
         </Link>
       </div>
       <FeedSection
-        title="まとめ系フィード一覧"
+        title="まとめ系サイト一覧"
         category="matome"
         feeds={feeds}
         loadingIds={loadingIds}
