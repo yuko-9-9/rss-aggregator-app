@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Feed } from "../../../../shared/types";
 import FeedCard from "./FeedCard";
 
@@ -18,23 +19,39 @@ export default function FeedSection({
   onUpdate,
   className,
 }: FeedSectionProps) {
+  // アコーディオンの開閉状態
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
     <>
-      <div className="mt-10 mb-6 border-b-2 border-cyan-600">
-        <h2 className="text-2xl font-semibold text-cyan-700">{title}</h2>
+      {/* タイトル（クリックで開閉） */}
+      <div
+        className="mt-10 mb-6 border-b-2 border-cyan-600 cursor-pointer select-none"
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-cyan-700">{title}</h2>
+          <span className="text-cyan-700 text-xl">{isOpen ? "▲" : "▼"}</span>
+        </div>
       </div>
-      <div className={`flex flex-wrap justify-center gap-6 ${className ?? ""}`}>
-        {feeds.map((feed, i) => (
-          <FeedCard
-            key={`${title}-${i}`} // React用の一意キー
-            feed={feed} // 1件分のフィードデータ
-            index={i} // 何番目か
-            category={category}
-            loadingIds={loadingIds} // 更新中かどうか判定するための配列
-            onUpdate={() => onUpdate(i)} // ← 呼ばれたら親に「このi番目更新して！」って伝える
-          />
-        ))}
-      </div>
+
+      {/* 中身（開いてる時だけ表示） */}
+      {isOpen && (
+        <div
+          className={`flex flex-wrap justify-center gap-6 ${className ?? ""}`}
+        >
+          {feeds.map((feed, i) => (
+            <FeedCard
+              key={`${title}-${i}`}
+              feed={feed}
+              index={i}
+              category={category}
+              loadingIds={loadingIds}
+              onUpdate={() => onUpdate(i)}
+            />
+          ))}
+        </div>
+      )}
     </>
   );
 }
